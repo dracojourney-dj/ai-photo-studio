@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="theme-color" content="#0d1722"/>
+<title>AI Photo Studio</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#0a1119;color:#f5f6f7;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC",sans-serif}
+.app{max-width:520px;margin:auto;min-height:100vh;padding:calc(env(safe-area-inset-top) + 16px) 18px calc(env(safe-area-inset-bottom) + 30px);background:linear-gradient(180deg,#101d2a,#0a1119)}
+.kicker{font-size:11px;letter-spacing:.2em;opacity:.65}.title{font:italic 48px Georgia,serif;line-height:.95;margin:8px 0}.sub{opacity:.72;font-size:13px}.hero{margin-top:22px;border-radius:30px;overflow:hidden;min-height:310px;background:linear-gradient(145deg,#223447,#111c27);display:flex;align-items:center;justify-content:center;position:relative}.hero img{width:100%;height:100%;object-fit:cover;position:absolute}.empty{position:relative;text-align:center;padding:45px}.upload{display:inline-block;margin-top:15px;background:#f1a0ae;color:#10141a;padding:13px 20px;border-radius:18px;font-weight:700}.hidden{display:none}.section{margin-top:26px}.sectionhead{display:flex;justify-content:space-between;align-items:end}.section h2{font:italic 25px Georgia,serif;margin:0}.hint{font-size:11px;opacity:.5}.skills{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:12px}.skill{border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.06);border-radius:20px;padding:17px;text-align:left;color:#fff}.skill b{display:block;font-size:15px}.skill span{display:block;font-size:11px;opacity:.55;margin-top:5px}.skill.active{background:linear-gradient(135deg,rgba(240,154,170,.35),rgba(151,225,202,.15));border-color:rgba(255,255,255,.35)}button{font:inherit}.result{margin-top:20px;display:none}.result img{width:100%;border-radius:26px;display:block}.actions{display:flex;gap:10px;margin-top:12px}.actions button{flex:1;border:0;border-radius:17px;padding:13px}.save{background:#a9dfcf}.again{background:#fff;color:#111}.status{margin-top:13px;font-size:12px;opacity:.65;min-height:18px}.loader{display:none;position:absolute;inset:0;background:rgba(8,13,19,.72);align-items:center;justify-content:center;z-index:3}.loader.on{display:flex}.spin{width:34px;height:34px;border:3px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:r .8s linear infinite}@keyframes r{to{transform:rotate(360deg)}}.nav{position:sticky;bottom:12px;margin-top:28px;background:rgba(24,35,47,.85);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.08);border-radius:25px;padding:8px;display:flex;justify-content:space-around}.nav span{font-size:11px;opacity:.65;padding:10px 15px}.nav .on{background:#fff;color:#10151b;border-radius:17px;opacity:1}
+</style>
+</head>
+<body>
+<main class="app">
+  <div class="kicker">AI PHOTO STUDIO</div>
+  <div class="title">Visual Diary</div>
+  <div class="sub">上传一张照片，选择一个 Skill，让 AI 直接完成视觉重绘。</div>
+
+  <section class="hero" id="hero">
+    <div class="empty" id="empty">
+      <div style="font:italic 28px Georgia">Your Photo</div>
+      <div style="font-size:12px;opacity:.55;margin-top:8px">先选择一张照片</div>
+      <label class="upload">上传照片<input id="file" class="hidden" type="file" accept="image/*"/></label>
+    </div>
+    <img id="preview" class="hidden"/>
+    <div class="loader" id="loader"><div class="spin"></div></div>
+  </section>
+
+  <section class="section">
+    <div class="sectionhead"><h2>Choose your Skill</h2><span class="hint">点击即生成</span></div>
+    <div class="skills" id="skills">
+      <button class="skill" data-id="marker"><b>马克笔速写</b><span>Marker Sketch</span></button>
+      <button class="skill" data-id="ink"><b>黑白墨线</b><span>Ink Drawing</span></button>
+      <button class="skill" data-id="watercolor"><b>清透水彩</b><span>Airy Watercolor</span></button>
+      <button class="skill" data-id="film"><b>电影胶片</b><span>Cinematic Film</span></button>
+      <button class="skill" data-id="pencil"><b>铅笔素描</b><span>Pencil Sketch</span></button>
+      <button class="skill" data-id="retro"><b>复古海报</b><span>Retro Poster</span></button>
+    </div>
+    <div class="status" id="status"></div>
+  </section>
+
+  <section class="result" id="result">
+    <div class="sectionhead"><h2>Result</h2><span class="hint">AI Generated</span></div>
+    <img id="out"/>
+    <div class="actions">
+      <button class="save" id="save">保存图片</button>
+      <button class="again" id="again">重新生成</button>
+    </div>
+  </section>
+
+  <div class="nav"><span class="on">Home</span><span>Styles</span><span>History</span><span>More</span></div>
+</main>
+<script>
+const fileEl=document.querySelector('#file'),preview=document.querySelector('#preview'),empty=document.querySelector('#empty'),loader=document.querySelector('#loader'),status=document.querySelector('#status'),result=document.querySelector('#result'),out=document.querySelector('#out');
+let imageData="",lastSkill="";
+const prompts={
+marker:"将照片转换为高级马克笔速写插画。保持人物身份、脸部五官、姿态、比例、服装、主体构图和主要环境结构与原图一致。整体采用自然的马克笔线稿、轻微纸张纹理和手绘笔触。特别要求：原图上半部分保持原照片内容和构图，不重新设计，不添加人物，不改变天空/建筑/头部等主要内容；马克笔风格主要作用于画面的下半部分。不要裁切，不改变主体位置。",
+ink:"将照片转换为精致黑白墨线插画。保持人物身份、五官、姿态、比例、服装和构图不变，只改变视觉表现为干净的墨线、黑白层次和纸张质感。",
+watercolor:"将照片转换为清透高级水彩画。保持人物身份、五官、姿态、比例、服装和构图不变，只改变色彩表现为透明水彩、自然晕染、轻纸纹。",
+film:"将照片转换为电影胶片摄影风格。保持人物身份、五官、姿态、比例和构图不变，加入自然胶片颗粒、电影色调、柔和高光和真实摄影质感。",
+pencil:"将照片转换为高级铅笔素描。保持人物身份、五官、姿态、比例、服装和构图不变，只改变视觉表现为细腻铅笔线条、明暗排线和纸张质感。",
+retro:"将照片转换为复古艺术海报风格。保持人物身份、姿态、比例和主体构图不变，采用复古印刷质感、有限色彩、纸张颗粒和设计感排版，但不要覆盖主体。"
+};
+function setStatus(t){status.textContent=t}
+function compress(file){
+ return new Promise((resolve,reject)=>{
+  const img=new Image(),r=new FileReader();
+  r.onload=()=>{img.onload=()=>{const max=1400,s=Math.min(1,max/Math.max(img.width,img.height));const c=document.createElement('canvas');c.width=Math.round(img.width*s);c.height=Math.round(img.height*s);c.getContext('2d').drawImage(img,0,0,c.width,c.height);resolve(c.toDataURL('image/jpeg',.82));};img.onerror=reject;img.src=r.result};r.onerror=reject;r.readAsDataURL(file)
+ })
+}
+fileEl.onchange=async()=>{const f=fileEl.files?.[0];if(!f)return;imageData=await compress(f);preview.src=imageData;preview.classList.remove('hidden');empty.classList.add('hidden');setStatus('照片已准备好，选择一个 Skill');result.style.display='none'}
+async function generate(id){
+ if(!imageData){setStatus('请先上传照片');return}
+ lastSkill=id;document.querySelectorAll('.skill').forEach(x=>x.classList.toggle('active',x.dataset.id===id));
+ loader.classList.add('on');setStatus('AI 正在生成…');result.style.display='none';
+ try{
+  const r=await fetch('/api/edit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:imageData,prompt:prompts[id]})});
+  const d=await r.json();if(!r.ok)throw new Error(d.error||'生成失败');
+  out.src=d.imageUrl;result.style.display='block';setStatus('生成完成');result.scrollIntoView({behavior:'smooth',block:'start'});
+ }catch(e){setStatus(e.message||'生成失败')}
+ finally{loader.classList.remove('on')}
+}
+document.querySelectorAll('.skill').forEach(b=>b.onclick=()=>generate(b.dataset.id));
+document.querySelector('#again').onclick=()=>generate(lastSkill);
+document.querySelector('#save').onclick=()=>{if(out.src)window.open(out.src,'_blank')};
+</script>
+</body>
+</html>
