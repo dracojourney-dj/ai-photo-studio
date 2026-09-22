@@ -1,0 +1,10 @@
+[build]
+  publish = "public"
+
+[functions]
+  directory = "api"
+
+[[redirects]]
+  from = "/api/edit"
+  to = "/.netlify/functions/edit"
+  status = 200
